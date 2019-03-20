@@ -1,4 +1,4 @@
-# cs450_project
+﻿# cs450_project
 project for CS450
 
 https://www.kaggle.com/c/mens-machine-learning-competition-2018/data
@@ -100,6 +100,19 @@ WTO - turnovers committed (by the winning team)
 WStl - steals (accomplished by the winning team)
 WBlk - blocks (accomplished by the winning team)
 WPF - personal fouls committed (by the winning team)
+LFGM - field goals made (by the losing team)
+LFGA - field goals attempted (by the losing team)
+LFGM3 - three pointers made (by the losing team)
+LFGA3 - three pointers attempted (by the losing team)
+LFTM - free throws made (by the losing team)
+LFTA - free throws attempted (by the losing team)
+LOR - offensive rebounds (pulled by the losing team)
+LDR - defensive rebounds (pulled by the losing team)
+LAst - assists (by the losing team)
+LTO - turnovers committed (by the losing team)
+LStl - steals (accomplished by the losing team)
+LBlk - blocks (accomplished by the losing team)
+LPF - personal fouls committed (by the losing team)
 (and then the same set of stats from the perspective of the losing team: LFGM is the number of field goals made by the losing team, and so on up to LPF).
 
 Note: by convention, "field goals made" (either WFGM or LFGM) refers to the total number of fields goals made by a team, a combination of both two-point field goals and three-point field goals. And "three point field goals made" (either WFGM3 or LFGM3) is just the three-point fields goals made, of course. So if you want to know specifically about two-point field goals, you have to subtract one from the other (e.g., WFGM - WFGM3). And the total number of points scored is most simply expressed as 2*FGM + FGM3 + FTM.
