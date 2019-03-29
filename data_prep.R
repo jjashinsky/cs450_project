@@ -5,8 +5,38 @@ set.seed(23)
 
 library(tidyverse)
 
-tourney <- read_csv("data/NCAATourneyDetailedResults.csv")
-regular <- read_csv("data/RegularSeasonDetailedResults.csv")
+tournament_data <- read_csv("data/NCAATourneyDetailedResults.csv")
+season_data <- read_csv("data/RegularSeasonDetailedResults.csv")
+
+full_data <- bind_rows(season_data, tournament_data) %>%
+  mutate(key = str_c(Season, DayNum, WTeamID))
+
+full_data1 <- full_data %>% 
+  select(key, Season, DayNum, WTeamID, WScore, WLoc, NumOT, WFGM, WFGA, WFGM3, WFGA3, WFTM, WFTA, WOR, WDR, WAst, WTO, WStl, WBlk, WPF)
+
+full_data2 <- full_data %>% 
+  select(key, Season, DayNum, LTeamID, LScore, WLoc, NumOT, LFGM, LFGA, LFGM3, LFGA3, LFTM, LFTA, LOR, LDR, LAst, LTO, LStl, LBlk, LPF)
+
+full_data1 <- full_data1 %>% 
+  mutate(status = "win", TeamID = WTeamID, Score = WScore, Loc = WLoc, FGM = WFGM, FGA = WFGA, FGM3 = WFGM3, FGA3 = WFGA3, FTM = WFTM, FTA = WFTA, OR = WOR, DR = WDR, Ast = WAst, TO = WTO, Stl = WStl, Blk = WBlk, PF = WPF) %>% 
+  select(-WTeamID, -WScore, -WLoc, -WFGM, -WFGA, -WFGM3, -WFGA3, -WFTM, -WFTA, -WOR, -WDR, -WAst, -WTO, -WStl, -WBlk, -WPF)
+
+full_data2 <- full_data2 %>% 
+  mutate(status = "lose", TeamID = LTeamID, Score = LScore, Loc = WLoc, FGM = LFGM, FGA = LFGA, FGM3 = LFGM3, FGA3 = LFGA3, FTM = LFTM, FTA = LFTA, OR = LOR, DR = LDR, Ast = LAst, TO = LTO, Stl = LStl, Blk = LBlk, PF = LPF) %>% 
+  select(-LTeamID, -LScore, -WLoc, -LFGM, -LFGA, -LFGM3, -LFGA3, -LFTM, -LFTA, -LOR, -LDR, -LAst, -LTO, -LStl, -LBlk, -LPF)
+
+new_data <- bind_rows(full_data1, full_data2)
+
+new_data1 <- new_data %>% 
+  group_by(TeamID) %>% 
+  arrange(Season, DayNum, .by_group = TRUE) %>% 
+  mutate(team_game_order = row_number()) %>% 
+  ungroup()
+
+new_data2 <- new_data1 %>% 
+  select(key, team_game_order, status)
+
+
 
 # group by season and teamID 
 # order by daynum
@@ -15,12 +45,19 @@ regular <- read_csv("data/RegularSeasonDetailedResults.csv")
 # join in conferences using TeamConferences.csv 
 
 
-rows <- 1:nrow(regular)
+data_with_ordering <- full_data %>%
+  left_join(new_data2, by = "key")
+
+data <- data_with_ordering %>%
+  spread(key = status, value = team_game_order)
+
+
+rows <- 1:nrow(data)
 sub_rows <- sample(rows, trunc(length(rows) * 0.5))
 
 
 # get subset1
-sub1 <- regular[sub_rows, ] %>%
+sub1 <- data[sub_rows, ] %>%
   rename("team1_id" = "WTeamID",
          "team1_score" = "WScore",
          "team2_id" = "LTeamID",
@@ -52,12 +89,14 @@ sub1 <- regular[sub_rows, ] %>%
          "team2_to" = "LTO",
          "team2_stl" = "LStl",
          "team2_blk" = "LBlk",
-         "team2_pf" = "LPF") %>%
+         "team2_pf" = "LPF",
+         "team1_game_order" = "win",
+         "team2_game_order" = "lose") %>%
   mutate(team2_num_ot = team1_num_ot, team1_win = 1)
 
 # get subset2
   
-sub2 <- regular[-sub_rows,] %>%
+sub2 <- data[-sub_rows,] %>%
   rename("team1_id" = "LTeamID",
          "team1_score" = "LScore",
          "team2_id" = "WTeamID",
@@ -89,10 +128,15 @@ sub2 <- regular[-sub_rows,] %>%
          "team2_to" = "WTO",
          "team2_stl" = "WStl",
          "team2_blk" = "WBlk",
-         "team2_pf" = "WPF",) %>%
+         "team2_pf" = "WPF",
+         "team1_game_order" = "lose",
+         "team2_game_order" = "win") %>%
   mutate(team2_num_ot = team1_num_ot, team1_win = 0)
 
-full <- rbind(sub1, sub2)
+data_combined <- rbind(sub1, sub2)
 
+
+game_data <- data_combined %>%
+  select(team1_id, team2_id, team1_win, key, team1_game_order, team2_game_order)
 
 
