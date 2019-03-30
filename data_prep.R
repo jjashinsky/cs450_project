@@ -1,60 +1,48 @@
 # data preperation 
 
-
+# takes away the randomness when we split the data
 set.seed(23)
 
 library(tidyverse)
 
+# load data
 tournament_data <- read_csv("data/NCAATourneyDetailedResults.csv")
 season_data <- read_csv("data/RegularSeasonDetailedResults.csv")
 
+# make a key to join by later
 full_data <- bind_rows(season_data, tournament_data) %>%
   mutate(key = str_c(Season, DayNum, WTeamID))
 
+# get the winning teams
 full_data1 <- full_data %>% 
-  select(key, Season, DayNum, WTeamID, WScore, WLoc, NumOT, WFGM, WFGA, WFGM3, WFGA3, WFTM, WFTA, WOR, WDR, WAst, WTO, WStl, WBlk, WPF)
+  mutate(status = "win") %>%
+  select(key, Season, DayNum, status, "TeamID" = "WTeamID") 
 
-full_data2 <- full_data %>% 
-  select(key, Season, DayNum, LTeamID, LScore, WLoc, NumOT, LFGM, LFGA, LFGM3, LFGA3, LFTM, LFTA, LOR, LDR, LAst, LTO, LStl, LBlk, LPF)
+# get the losing teams
+full_data2 <- full_data %>%
+  mutate(status = "lose") %>%
+  select(key, Season, DayNum, status, "TeamID" = "LTeamID")
 
-full_data1 <- full_data1 %>% 
-  mutate(status = "win", TeamID = WTeamID, Score = WScore, Loc = WLoc, FGM = WFGM, FGA = WFGA, FGM3 = WFGM3, FGA3 = WFGA3, FTM = WFTM, FTA = WFTA, OR = WOR, DR = WDR, Ast = WAst, TO = WTO, Stl = WStl, Blk = WBlk, PF = WPF) %>% 
-  select(-WTeamID, -WScore, -WLoc, -WFGM, -WFGA, -WFGM3, -WFGA3, -WFTM, -WFTA, -WOR, -WDR, -WAst, -WTO, -WStl, -WBlk, -WPF)
-
-full_data2 <- full_data2 %>% 
-  mutate(status = "lose", TeamID = LTeamID, Score = LScore, Loc = WLoc, FGM = LFGM, FGA = LFGA, FGM3 = LFGM3, FGA3 = LFGA3, FTM = LFTM, FTA = LFTA, OR = LOR, DR = LDR, Ast = LAst, TO = LTO, Stl = LStl, Blk = LBlk, PF = LPF) %>% 
-  select(-LTeamID, -LScore, -WLoc, -LFGM, -LFGA, -LFGM3, -LFGA3, -LFTM, -LFTA, -LOR, -LDR, -LAst, -LTO, -LStl, -LBlk, -LPF)
-
-new_data <- bind_rows(full_data1, full_data2)
-
-new_data1 <- new_data %>% 
+# join them so that teams are only in one column
+# then order their games
+new_data <- bind_rows(full_data1, full_data2) %>%
   group_by(TeamID) %>% 
   arrange(Season, DayNum, .by_group = TRUE) %>% 
   mutate(team_game_order = row_number()) %>% 
-  ungroup()
-
-new_data2 <- new_data1 %>% 
+  ungroup() %>%
   select(key, team_game_order, status)
 
-
-
-# group by season and teamID 
-# order by daynum
-# take last 3-5 games to find momentum
-# average overall for all games in season (avg points, )
-# join in conferences using TeamConferences.csv 
-
-
+# joining the ordering data back in
 data_with_ordering <- full_data %>%
-  left_join(new_data2, by = "key")
+  left_join(new_data, by = "key")
 
+# spread the data
 data <- data_with_ordering %>%
   spread(key = status, value = team_game_order)
 
-
+# sample half of the data rows
 rows <- 1:nrow(data)
 sub_rows <- sample(rows, trunc(length(rows) * 0.5))
-
 
 # get subset1
 sub1 <- data[sub_rows, ] %>%
@@ -95,7 +83,6 @@ sub1 <- data[sub_rows, ] %>%
   mutate(team2_num_ot = team1_num_ot, team1_win = 1)
 
 # get subset2
-  
 sub2 <- data[-sub_rows,] %>%
   rename("team1_id" = "LTeamID",
          "team1_score" = "LScore",
@@ -133,10 +120,74 @@ sub2 <- data[-sub_rows,] %>%
          "team2_game_order" = "win") %>%
   mutate(team2_num_ot = team1_num_ot, team1_win = 0)
 
+# join them back in. 
+# half of the losing team is now team1
+# half of the winning team is now team1
 data_combined <- rbind(sub1, sub2)
 
-
+# grab the actual game results and make a unique key
 game_data <- data_combined %>%
-  select(team1_id, team2_id, team1_win, key, team1_game_order, team2_game_order)
+  select(team1_id, team2_id, team1_win, team1_game_order, team2_game_order, key) %>%
+  mutate(key_1 = paste0(team1_id, team1_game_order),
+         key_2 = paste0(team2_id, team1_game_order))
 
+# getting subset for team1
+# increasing their game order by 1 and using it make a key to match game_data
+game_data_copy1 <- data_combined %>% mutate(team_game_order_next = team1_game_order + 1,
+                                            key = paste0(team1_id, team_game_order_next)) %>%
+  select("id" =  "team1_id",
+         "score" = "team1_score",
+         "num_ot" = "team1_num_ot",
+         "fgm" = "team1_fgm",
+         "fga" = "team1_fga",
+         "fgm3" = "team1_fgm3",
+         "fga3" = "team1_fga3",
+         "ftm" = "team1_ftm",
+         "fta" = "team1_fta",
+         "or" = "team1_or",
+         "dr" = "team1_dr",
+         "ast" = "team1_ast",   
+         "to" = "team1_to",
+         "stl" = "team1_stl",
+         "blk" = "team1_blk",
+         "pf" = "team1_pf",
+         "won_previous_game" = "team1_win",
+         "team_game_order" = "team1_game_order",
+         key,
+         team_game_order_next)
 
+# same as above but for team2
+game_data_copy2 <- data_combined %>% mutate(team_game_order_next = team2_game_order + 1,
+                                            key = paste0(team2_id, team_game_order_next),
+                                            won_previous_game = case_when(team1_win == 0 ~ 1,
+                                                                team1_win == 1 ~ 0)) %>%
+  select("id" =  "team2_id",
+         "score" = "team2_score",
+         "num_ot" = "team2_num_ot",
+         "fgm" = "team2_fgm",
+         "fga" = "team2_fga",
+         "fgm3" = "team2_fgm3",
+         "fga3" = "team2_fga3",
+         "ftm" = "team2_ftm",
+         "fta" = "team2_fta",
+         "or" = "team2_or",
+         "dr" = "team2_dr",
+         "ast" = "team2_ast",   
+         "to" = "team2_to",
+         "stl" = "team2_stl",
+         "blk" = "team2_blk",
+         "pf" = "team2_pf",
+         "team_game_order" = "team2_game_order",
+         won_previous_game,
+         key,
+         team_game_order_next)
+
+# bind them back together
+game_data_rbind <- rbind(game_data_copy1, game_data_copy2)
+
+#joining in the subsets
+game_data_full <- game_data %>%
+  left_join(game_data_rbind, by = c("key_1" = "key")) %>% # first get the team1 data
+  left_join(game_data_rbind, by = c("key_2" = "key")) %>% # then get the team2 data
+  filter(team1_game_order > 1, team2_game_order > 1) %>% # get rid of the games that wont have previous data
+  na.omit() # still have some NAs (idk why?)
