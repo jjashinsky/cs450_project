@@ -191,3 +191,5 @@ game_data_full <- game_data %>%
   left_join(game_data_rbind, by = c("key_2" = "key")) %>% # then get the team2 data
   filter(team1_game_order > 1, team2_game_order > 1) %>% # get rid of the games that wont have previous data
   na.omit() # still have some NAs (idk why?)
+
+#write.csv(game_data_full, "derived_data/game_data_full.csv")
