@@ -42,6 +42,10 @@ def getProjectData():
     project_data = pd.read_csv('C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/derived_data/game_data_ml.csv')
     return project_data
 
+def getProjectPredictionData():
+    project_data = pd.read_csv('C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/data/FinalData.csv')
+    return project_data
+
 
 
 def dataTargetSplit(data, target_column_name):
@@ -137,36 +141,42 @@ def standardizeData(scaling_data, data):
 
 def main():
     project_data = getProjectData()
+    prediction_data = getProjectPredictionData()
     
     X_data, y_data = dataTargetSplit(project_data, "team1_win")
     X_train, X_test, y_train, y_test = split_data(project_data, "team1_win")
+    
+    X_data_prediction, y_data_prediction = dataTargetSplit(prediction_data, "team1_win")
 
 #    X_train_std = standardizeData(X_train, X_train)
 #    X_test_std = standardizeData(X_train, X_test)
 
 
-
+#CTRL + 4 will comment out a block of code
+#CTRL + 5 will uncomment out a block of code
 
     #Decision Tree Classifier
-    decisionTreeClassifier = DecisionTreeClassifier(criterion='entropy', random_state=0, max_depth=5)
-    
-    scores = cross_val_score(decisionTreeClassifier, X_data, y_data, cv=5)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    decisionTreeClassifier.fit(X_train, y_train)
-    predictions = decisionTreeClassifier.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Decision Tree")
-    #Make a graph of the tree
-    dot_data = tree.export_graphviz(decisionTreeClassifier, out_file=None, 
-                                    feature_names=list(project_data.drop(columns=["team1_win"])),  
-                                    class_names="team1_win")
-    graph = pydotplus.graph_from_dot_data(dot_data)  
-    graph.write_png("C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/graphs/decision_tree.png")
-
-
+# =============================================================================
+#     decisionTreeClassifier = DecisionTreeClassifier(criterion='entropy', random_state=0, max_depth=5)
+#     
+#     scores = cross_val_score(decisionTreeClassifier, X_data, y_data, cv=5)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     decisionTreeClassifier.fit(X_train, y_train)
+#     predictions = decisionTreeClassifier.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Decision Tree")
+#     #Make a graph of the tree
+#     dot_data = tree.export_graphviz(decisionTreeClassifier, out_file=None, 
+#                                     feature_names=list(project_data.drop(columns=["team1_win"])),  
+#                                     class_names="team1_win")
+#     graph = pydotplus.graph_from_dot_data(dot_data)  
+#     graph.write_png("C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/graphs/decision_tree.png")
+# 
+# 
+# =============================================================================
 
 
     #Neural Network Classifer
-    neural_network = MLPClassifier(hidden_layer_sizes=(40, ), activation='logistic', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=200, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=True, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
+    neural_network = MLPClassifier(hidden_layer_sizes=(100, ), activation='logistic', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=400, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=True, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
     
     scores = cross_val_score(neural_network, X_data, y_data, cv=10)
     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
@@ -176,70 +186,84 @@ def main():
 
 
 
-
-    #Bagging Classifer with KNeighbors
-    bagging = BaggingClassifier(KNeighborsClassifier(), max_samples=0.5, max_features=0.5)    
-
-    scores = cross_val_score(bagging, X_data, y_data, cv=50)
+    #Neural Network Classifer Prediction
+    neural_network = MLPClassifier(hidden_layer_sizes=(100, ), activation='logistic', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=400, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=True, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
+    
+    scores = cross_val_score(neural_network, X_data, y_data, cv=10)
     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    bagging.fit(X_train, y_train)
-    predictions = bagging.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Bagging Classifier")
+    neural_network.fit(X_data, y_data)
+    predictions = neural_network.predict(X_data_prediction)
+    evaluate_predictions(predictions, y_data_prediction, False, "Neural Network Prediction")
+
+
+# =============================================================================
+# 
+#     #Bagging Classifer with KNeighbors
+#     bagging = BaggingClassifier(MLPClassifier(), max_samples=0.5, max_features=0.5)    
+# 
+#     scores = cross_val_score(bagging, X_data, y_data, cv=50)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     bagging.fit(X_train, y_train)
+#     predictions = bagging.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Bagging Classifier")
+#     
+# =============================================================================
     
-    
 
-    
-    #Ada Boost Classifier
-    ada_boost_classifier = AdaBoostClassifier(n_estimators=100)
-
-    scores = cross_val_score(ada_boost_classifier, X_data, y_data, cv=10)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    ada_boost_classifier.fit(X_train, y_train)
-    predictions = ada_boost_classifier.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Ada Boost Classifier")
-
-
-
-    #Gradient Boosting Classifier
-    gradient_boosting_classifier = GradientBoostingClassifier(loss='deviance', learning_rate=0.1, n_estimators=100, subsample=1.0, criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3, min_impurity_decrease=0.0, min_impurity_split=None, init=None, random_state=None, max_features=None, verbose=0, max_leaf_nodes=None, warm_start=False, presort='auto', validation_fraction=0.1, n_iter_no_change=None, tol=0.0001)
-
-    scores = cross_val_score(gradient_boosting_classifier, X_data, y_data, cv=10)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    gradient_boosting_classifier.fit(X_train, y_train)
-    predictions = gradient_boosting_classifier.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Gradient Boosting Classifier")
-
-
-
-  
-    #Random Forest Classifier
-    random_forest_classifier = RandomForestClassifier(n_estimators=200, n_jobs=-1, oob_score=True, max_depth=5 )
-
-    scores = cross_val_score(random_forest_classifier, X_data, y_data, cv=10)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    random_forest_classifier.fit(X_train, y_train)
-    predictions = random_forest_classifier.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Random Forest Classifier")
-
-    # Extract single tree and write to png
-    estimator = random_forest_classifier.estimators_[6]
-    dot_data = tree.export_graphviz(estimator, out_file=None, 
-                                    feature_names=list(project_data.drop(columns=["team1_win"])),  
-                                    class_names="team1_win")
-    graph = pydotplus.graph_from_dot_data(dot_data)  
-    graph.write_png("C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/graphs/random_forest_decision_tree.png")
-
-    
-    
-    #Support Vector Machine Classifier
-    support_vector_machine_classifier = svm.SVC(C=1.0, kernel='rbf', degree=3, gamma='scale', coef0=0.0, shrinking=True, probability=False, tol=0.001, cache_size=200, class_weight=None, verbose=False, max_iter=-1, decision_function_shape='ovr', random_state=None)
-
-    scores = cross_val_score(support_vector_machine_classifier, X_data, y_data, cv=10)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    support_vector_machine_classifier.fit(X_train, y_train)
-    predictions = support_vector_machine_classifier.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Support Vector Machine Classifier")
-    
+# =============================================================================
+#     
+#     #Ada Boost Classifier
+#     ada_boost_classifier = AdaBoostClassifier(n_estimators=100)
+# 
+#     scores = cross_val_score(ada_boost_classifier, X_data, y_data, cv=10)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     ada_boost_classifier.fit(X_train, y_train)
+#     predictions = ada_boost_classifier.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Ada Boost Classifier")
+# 
+# 
+# 
+#     #Gradient Boosting Classifier
+#     gradient_boosting_classifier = GradientBoostingClassifier(loss='deviance', learning_rate=0.1, n_estimators=100, subsample=1.0, criterion='friedman_mse', min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_depth=3, min_impurity_decrease=0.0, min_impurity_split=None, init=None, random_state=None, max_features=None, verbose=0, max_leaf_nodes=None, warm_start=False, presort='auto', validation_fraction=0.1, n_iter_no_change=None, tol=0.0001)
+# 
+#     scores = cross_val_score(gradient_boosting_classifier, X_data, y_data, cv=10)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     gradient_boosting_classifier.fit(X_train, y_train)
+#     predictions = gradient_boosting_classifier.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Gradient Boosting Classifier")
+# 
+# 
+# 
+#   
+#     #Random Forest Classifier
+#     random_forest_classifier = RandomForestClassifier(n_estimators=200, n_jobs=-1, oob_score=True, max_depth=5 )
+# 
+#     scores = cross_val_score(random_forest_classifier, X_data, y_data, cv=10)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     random_forest_classifier.fit(X_train, y_train)
+#     predictions = random_forest_classifier.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Random Forest Classifier")
+# 
+#     # Extract single tree and write to png
+#     estimator = random_forest_classifier.estimators_[6]
+#     dot_data = tree.export_graphviz(estimator, out_file=None, 
+#                                     feature_names=list(project_data.drop(columns=["team1_win"])),  
+#                                     class_names="team1_win")
+#     graph = pydotplus.graph_from_dot_data(dot_data)  
+#     graph.write_png("C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/graphs/random_forest_decision_tree.png")
+# 
+#     
+#     
+#     #Support Vector Machine Classifier
+#     support_vector_machine_classifier = svm.SVC(C=1.0, kernel='rbf', degree=3, gamma='scale', coef0=0.0, shrinking=True, probability=False, tol=0.001, cache_size=200, class_weight=None, verbose=False, max_iter=-1, decision_function_shape='ovr', random_state=None)
+# 
+#     scores = cross_val_score(support_vector_machine_classifier, X_data, y_data, cv=10)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     support_vector_machine_classifier.fit(X_train, y_train)
+#     predictions = support_vector_machine_classifier.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Support Vector Machine Classifier")
+#     
+# =============================================================================
 
 if __name__ == "__main__":
     main()
