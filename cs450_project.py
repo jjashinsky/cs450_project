@@ -43,7 +43,7 @@ def getProjectData():
     return project_data
 
 def getProjectPredictionData():
-    project_data = pd.read_csv('C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/data/FinalData.csv')
+    project_data = pd.read_csv('C:/Users/Owner/Desktop/Isaac School/CS 450/Project/cs450_project/derived_data/FinalData.csv')
     return project_data
 
 
@@ -175,15 +175,17 @@ def main():
 # =============================================================================
 
 
-    #Neural Network Classifer
-    neural_network = MLPClassifier(hidden_layer_sizes=(100, ), activation='logistic', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=400, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=True, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
-    
-    scores = cross_val_score(neural_network, X_data, y_data, cv=10)
-    print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
-    neural_network.fit(X_train, y_train)
-    predictions = neural_network.predict(X_test)
-    evaluate_predictions(predictions, y_test, False, "Neural Network")
-
+# =============================================================================
+#     #Neural Network Classifer
+#     neural_network = MLPClassifier(hidden_layer_sizes=(100, ), activation='logistic', solver='adam', alpha=0.0001, batch_size='auto', learning_rate='constant', learning_rate_init=0.001, power_t=0.5, max_iter=400, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True, early_stopping=True, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08, n_iter_no_change=10)
+#     
+#     scores = cross_val_score(neural_network, X_data, y_data, cv=10)
+#     print("Cross Validation Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+#     neural_network.fit(X_train, y_train)
+#     predictions = neural_network.predict(X_test)
+#     evaluate_predictions(predictions, y_test, False, "Neural Network")
+# 
+# =============================================================================
 
 
     #Neural Network Classifer Prediction
